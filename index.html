@@ -1828,19 +1828,29 @@
     }
 
     async function ensureUser() {
-      const { data } = await db.from('users').select('*').eq('telegram_id', tgId).single();
-      if (!data) {
-        await db.from('users').insert({
-          telegram_id: tgId,
-          username: tgUser?.username || '',
-          full_name: tgUser?.first_name || '',
-          rating_sum: 0, rating_count: 0,
-        });
-        state.user = (await db.from('users').select('*').eq('telegram_id', tgId).single()).data;
-      } else {
-        state.user = data;
-      }
+  const { data } = await db.from('users').select('*').eq('telegram_id', tgId).single();
+  if (!data) {
+    await db.from('users').insert({
+      telegram_id: tgId,
+      username: tgUser?.username || '',
+      full_name: tgUser?.first_name || '',
+      rating_sum: 0, rating_count: 0,
+    });
+    state.user = (await db.from('users').select('*').eq('telegram_id', tgId).single()).data;
+  } else {
+    state.user = data;
+    // Ban tekshiruvi
+    if (data.is_banned) {
+      document.body.innerHTML = `
+        <div style="position:fixed;inset:0;background:#070710;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;font-family:sans-serif;">
+          <div style="font-size:56px;margin-bottom:20px">🚫</div>
+          <div style="font-size:20px;font-weight:700;color:#f2f2ff;margin-bottom:10px">Siz bloklangansiz</div>
+          <div style="font-size:14px;color:rgba(242,242,255,0.55);line-height:1.6">Hisobingiz qoidabuzarlik sababli<br>platformadan bloklangan.</div>
+        </div>`;
+      throw new Error('banned');
     }
+  }
+}
 
     // ─── TAB ──────────────────────────────────────────────────────
     function goTab(name, el) {
@@ -1961,12 +1971,18 @@
   </div>`;
     }
 
-    function openChat(lid) {
-      if (!tgId) { toast('Telegram orqali oching', 'err'); return; }
-      const url = `https://t.me/${BOT_USERNAME}?start=listing_${lid}`;
-      if (tg?.openTelegramLink) tg.openTelegramLink(url);
-      else window.open(url, '_blank');
-    }
+   function openChat(lid) {
+  if (!tgId) { toast('Telegram orqali oching', 'err'); return; }
+  const url = `https://t.me/${BOT_USERNAME}?start=listing_${lid}`;
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(url);
+  } else if (tg?.close) {
+    tg.close();
+    setTimeout(() => window.open(url, '_blank'), 300);
+  } else {
+    window.open(url, '_blank');
+  }
+}
 
     // ─── POST ─────────────────────────────────────────────────────
     function setPostType(t) {
