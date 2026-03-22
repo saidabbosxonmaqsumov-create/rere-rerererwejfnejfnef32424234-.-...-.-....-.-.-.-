@@ -1971,15 +1971,15 @@
   </div>`;
     }
 
-   function openChat(lid) {
+  function openChat(lid) {
   if (!tgId) { toast('Telegram orqali oching', 'err'); return; }
   const url = `https://t.me/${BOT_USERNAME}?start=listing_${lid}`;
-  if (tg?.openTelegramLink) {
-    tg.openTelegramLink(url);
-  } else if (tg?.close) {
-    tg.close();
-    setTimeout(() => window.open(url, '_blank'), 300);
-  } else {
+
+  try {
+    Telegram.WebApp.openTelegramLink(url);
+    // Bot chatida bo'lsa ham Web App ni yopish
+    setTimeout(() => Telegram.WebApp.close(), 300);
+  } catch(e) {
     window.open(url, '_blank');
   }
 }
