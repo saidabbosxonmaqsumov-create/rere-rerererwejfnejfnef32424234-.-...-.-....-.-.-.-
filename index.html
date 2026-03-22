@@ -2,6 +2,887 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>GameMarket UZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:      #e8e8f0;
+  --sur:     #e8e8f0;
+  --t1:      #1a1a2e;
+  --t2:      rgba(26,26,46,0.5);
+  --t3:      rgba(26,26,46,0.25);
+  --ac:      #3d3a8c;
+  --ac2:     #5b57c8;
+  --gr:      #0a7a52;
+  --gr2:     #0d9464;
+  --red:     #c0392b;
+  --gold:    #8a6500;
+  --so: 3px 3px 8px rgba(150,150,175,0.48),-2px -2px 5px rgba(255,255,255,0.88);
+  --sd: 6px 6px 16px rgba(150,150,175,0.52),-4px -4px 10px rgba(255,255,255,0.92);
+  --si: inset 4px 4px 10px rgba(150,150,175,0.42),inset -3px -3px 7px rgba(255,255,255,0.88);
+  --ss: inset 3px 3px 7px rgba(150,150,175,0.4),inset -2px -2px 5px rgba(255,255,255,0.88);
+  --th:  68px;
+  --fh: 'Syne',sans-serif;
+  --fb: 'Inter',sans-serif;
+}
+html.dark {
+  --bg:  #131313;
+  --sur: #131313;
+  --t1:  #efefef;
+  --t2:  rgba(239,239,239,0.44);
+  --t3:  rgba(239,239,239,0.2);
+  --ac:  #10E89F;
+  --ac2: #0dbd80;
+  --gr:  #10E89F;
+  --gr2: #0dbd80;
+  --red: #e74c3c;
+  --gold:#FFD234;
+  --so: 3px 3px 8px rgba(0,0,0,0.58),-2px -2px 5px rgba(255,255,255,0.032);
+  --sd: 6px 6px 16px rgba(0,0,0,0.66),-4px -4px 10px rgba(255,255,255,0.036);
+  --si: inset 4px 4px 10px rgba(0,0,0,0.58),inset -3px -3px 7px rgba(255,255,255,0.036);
+  --ss: inset 3px 3px 7px rgba(0,0,0,0.5),inset -2px -2px 5px rgba(255,255,255,0.036);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg);color:var(--t1);font-family:var(--fb);font-size:15px;overscroll-behavior:none;transition:background .3s,color .3s}
+body{min-height:100dvh;overflow-x:hidden;max-width:100vw;padding-bottom:calc(var(--th)+env(safe-area-inset-bottom));background:var(--bg);transition:background .3s}
+button{font-family:var(--fb);cursor:pointer;border:none;background:none;-webkit-appearance:none}
+input,select{font-family:var(--fb);-webkit-appearance:none}
+
+/* TAB BAR */
+.tab-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  height:var(--th);background:var(--bg);
+  box-shadow:0 -4px 16px rgba(0,0,0,0.06);
+  display:flex;align-items:stretch;
+  padding-bottom:env(safe-area-inset-bottom);
+  transition:background .3s;
+}
+html.dark .tab-bar{box-shadow:0 -2px 12px rgba(0,0,0,0.5)}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;color:var(--t3);font-size:10px;font-weight:600;letter-spacing:.2px;
+  transition:color .2s;
+}
+.tab-item svg{width:21px;height:21px;transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+.tab-item.active{color:var(--ac)}
+.tab-item.active svg{transform:translateY(-2px) scale(1.1)}
+
+/* PAGES */
+.page{display:none;animation:pgIn .22s ease}
+.page.active{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* HEADER */
+.hdr{
+  position:sticky;top:0;z-index:50;
+  padding:14px 16px 12px;
+  background:var(--bg);
+  transition:background .3s;
+}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{font-family:var(--fh);font-size:21px;font-weight:800;letter-spacing:-.5px;color:var(--t1)}
+.logo em{font-style:normal;color:var(--ac)}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.usr-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--sur);padding:4px 10px 4px 5px;border-radius:100px;
+  box-shadow:var(--so);max-width:140px;
+}
+.usr-av{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#FFD234,#FF8C00);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;color:#000;
+}
+.usr-name{font-size:12px;font-weight:600;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme-btn{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:var(--sur);box-shadow:var(--so);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:box-shadow .15s;
+}
+.theme-btn:active{box-shadow:var(--ss)}
+
+/* TOGGLE */
+.toggle{
+  display:flex;background:var(--sur);border-radius:13px;padding:3px;
+  margin:12px 16px 0;box-shadow:var(--si);
+}
+.tog-btn{
+  flex:1;padding:9px 10px;border-radius:10px;border:none;
+  background:transparent;color:var(--t3);
+  font-size:13px;font-weight:600;font-family:var(--fb);
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px;
+}
+.tog-btn.active{background:var(--bg);color:var(--t1);box-shadow:var(--so)}
+
+/* CHIPS */
+.chips{display:flex;gap:7px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex-shrink:0;padding:7px 13px;border-radius:100px;border:none;
+  background:var(--sur);color:var(--t3);
+  font-size:12px;font-weight:600;font-family:var(--fb);
+  box-shadow:var(--so);transition:all .2s;white-space:nowrap;
+}
+.chip.active{color:var(--t1);box-shadow:var(--ss)}
+
+/* FEED */
+.feed{display:flex;flex-direction:column;gap:12px;padding:12px 16px 0}
+
+/* CARD */
+.lcard{
+  background:var(--sur);border-radius:18px;
+  box-shadow:var(--sd);overflow:hidden;
+  transition:box-shadow .15s;
+}
+.lcard:active{box-shadow:var(--si)}
+.cbar{height:3px}
+.lcard.pubg .cbar{background:linear-gradient(90deg,#FFD234,#FF8C00)}
+.lcard.codm .cbar{background:linear-gradient(90deg,#FF4B5C,#C0002E)}
+.lcard.ff   .cbar{background:linear-gradient(90deg,#FF7B35,#E03200)}
+.lcard.ml   .cbar{background:linear-gradient(90deg,#A855F7,#6D28D9)}
+.cin{padding:13px 14px}
+.chead{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.gpill{
+  padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;
+  box-shadow:var(--so);color:var(--t2);
+}
+.bdg{padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;box-shadow:var(--ss)}
+.bdg.blue  {color:#4a42bb}
+.bdg.silver{color:var(--t2)}
+.tbadge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 9px;border-radius:100px;
+  font-size:11px;font-weight:600;margin-bottom:7px;
+  box-shadow:var(--ss);
+}
+.tbadge.sell{color:var(--gr)}
+.tbadge.buy {color:var(--ac)}
+.camount{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--t1);line-height:1.1}
+.cprow{display:flex;align-items:baseline;gap:4px;margin:5px 0 10px}
+.cprice{font-size:17px;font-weight:700;color:var(--gr)}
+.ccur{font-size:11px;color:var(--t3)}
+.cfooter{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:9px;border-top:1px solid rgba(128,128,128,0.12)}
+.srow{display:flex;align-items:center;gap:8px}
+.sav{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;box-shadow:var(--so);
+}
+.lcard.pubg .sav{background:linear-gradient(135deg,#FFD234,#FF8C00);color:#000}
+.lcard.codm .sav{background:linear-gradient(135deg,#FF4B5C,#C0002E);color:#fff}
+.lcard.ff   .sav{background:linear-gradient(135deg,#FF7B35,#E03200);color:#fff}
+.lcard.ml   .sav{background:linear-gradient(135deg,#A855F7,#6D28D9);color:#fff}
+.sid{font-size:12px;font-weight:600;color:var(--t1)}
+.str{font-size:11px;color:var(--t2);margin-top:1px}
+.rpill{
+  font-size:12px;font-weight:700;color:var(--gold);
+  background:var(--sur);padding:4px 10px;border-radius:100px;
+  box-shadow:var(--so);white-space:nowrap;
+}
+.prow{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0 0}
+.pchip{padding:3px 8px;border-radius:100px;font-size:11px;font-weight:500;color:var(--t2);box-shadow:var(--ss)}
+.cbtn{
+  width:100%;margin-top:12px;padding:12px;border-radius:13px;border:none;
+  background:var(--sur);color:var(--ac);
+  font-size:14px;font-weight:700;font-family:var(--fb);
+  box-shadow:var(--so);transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.cbtn:hover{color:var(--ac2)}
+.cbtn:active{box-shadow:var(--si);color:var(--t1)}
+.mchip{
+  width:100%;margin-top:12px;padding:10px;border-radius:13px;
+  text-align:center;font-size:12px;color:var(--t2);
+  box-shadow:var(--ss);font-weight:500;
+}
+
+/* EMPTY / LOADER */
+.empty{display:flex;flex-direction:column;align-items:center;padding:56px 20px;text-align:center}
+.empty-icon{font-size:46px;margin-bottom:12px}
+.empty h3{font-family:var(--fh);font-size:18px;font-weight:700;margin-bottom:6px;color:var(--t1)}
+.empty p{font-size:13px;color:var(--t2);line-height:1.6}
+.loader{display:flex;flex-direction:column;align-items:center;padding:56px 20px;gap:12px}
+.spin{
+  width:34px;height:34px;border-radius:50%;
+  border:2.5px solid transparent;
+  box-shadow:var(--si);
+  position:relative;animation:sp .8s linear infinite;
+}
+.spin::after{
+  content:'';position:absolute;inset:2px;border-radius:50%;
+  border:2px solid transparent;border-top-color:var(--ac);
+  animation:sp .8s linear infinite;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loader p{font-size:13px;color:var(--t2)}
+
+/* POST */
+.pbody{padding:18px 16px}
+.fg{margin-bottom:18px}
+.flbl{font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;display:block}
+.finp{
+  width:100%;padding:13px 14px;
+  background:var(--sur);box-shadow:var(--si);
+  border:none;border-radius:12px;color:var(--t1);
+  font-size:15px;font-family:var(--fb);outline:none;
+}
+.finp::placeholder{color:var(--t3)}
+.tsel{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.topt{
+  padding:13px 10px;border-radius:13px;border:none;
+  background:var(--sur);box-shadow:var(--so);
+  text-align:center;cursor:pointer;transition:all .2s;
+}
+.topt.active{box-shadow:var(--si)}
+.topt .ti{font-size:20px;margin-bottom:4px}
+.topt .tl{font-size:13px;font-weight:700;color:var(--t1)}
+.topt .ts{font-size:11px;color:var(--t2);margin-top:2px}
+.topt.active.sell .tl{color:var(--gr)}
+.topt.active.buy  .tl{color:var(--ac)}
+.ggrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.gopt{
+  padding:11px 10px;border-radius:13px;border:none;
+  background:var(--sur);box-shadow:var(--so);
+  display:flex;align-items:center;gap:9px;cursor:pointer;transition:all .2s;
+}
+.gopt.active{box-shadow:var(--si)}
+.gopt .gi{font-size:19px}
+.gopt .gn{font-size:12px;font-weight:600;color:var(--t1)}
+.gopt .gs{font-size:10px;color:var(--t2);margin-top:1px}
+.paybox{
+  padding:12px 13px;border-radius:12px;
+  background:var(--sur);box-shadow:var(--si);
+  display:flex;align-items:center;gap:9px;
+}
+.paybox svg{width:17px;height:17px;flex-shrink:0;color:var(--ac)}
+.paybox p{font-size:13px;color:var(--t2);line-height:1.5}
+.subbtn{
+  width:100%;padding:13px;border-radius:13px;border:none;
+  background:var(--sur);color:var(--ac);
+  font-size:14px;font-weight:700;font-family:var(--fb);
+  box-shadow:var(--so);transition:all .15s;margin-top:4px;
+}
+.subbtn:hover{color:var(--ac2)}
+.subbtn:active{box-shadow:var(--si);color:var(--t1)}
+.subbtn:disabled{opacity:.45;cursor:not-allowed}
+
+/* PROFILE */
+.phero{padding:26px 16px 18px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.pav{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,#FFD234,#FF8C00);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fh);font-size:26px;font-weight:700;color:#000;
+  box-shadow:var(--sd);margin-bottom:11px;
+}
+.pname{font-family:var(--fh);font-size:19px;font-weight:700;color:var(--t1)}
+.phandle{font-size:12px;color:var(--t2);margin-top:3px}
+.pbrow{display:flex;align-items:center;gap:7px;margin-top:9px;flex-wrap:wrap;justify-content:center}
+.pbadge{padding:4px 12px;border-radius:100px;font-size:12px;font-weight:700;box-shadow:var(--so);color:var(--t2)}
+.pbadge.silver{color:#6b78a0}
+.pbadge.blue  {color:var(--ac)}
+.expb{font-size:11px;color:var(--t2);padding:4px 11px;border-radius:100px;box-shadow:var(--ss)}
+.srow3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 16px 16px}
+.sbox{background:var(--sur);border-radius:14px;padding:13px 8px;text-align:center;box-shadow:var(--so)}
+.sval{font-family:var(--fh);font-size:20px;font-weight:800;color:var(--t1)}
+.slbl{font-size:11px;color:var(--t2);margin-top:3px}
+.sechead{padding:0 16px 8px;font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.9px;text-transform:uppercase}
+.mylist{margin:0 16px;border-radius:14px;overflow:hidden;box-shadow:var(--sd)}
+.myrow{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 13px;background:var(--sur);
+  border-bottom:1px solid rgba(128,128,128,0.1);transition:background .15s;
+}
+.myrow:last-child{border-bottom:none}
+.mrl{flex:1;overflow:hidden}
+.mrn{font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrm{font-size:11px;color:var(--t2);margin-top:2px}
+.delbtn{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;margin-left:8px;
+  background:var(--sur);color:var(--red);
+  box-shadow:var(--so);display:flex;align-items:center;justify-content:center;
+}
+.delbtn:active{box-shadow:var(--ss)}
+.delbtn svg{width:13px;height:13px}
+
+/* ADMIN */
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px 16px 0}
+.astat{background:var(--sur);border-radius:14px;padding:14px;box-shadow:var(--so)}
+.aval{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--t1)}
+.albl{font-size:11px;color:var(--t2);margin-top:2px}
+.alist{padding:0 16px}
+.acard{background:var(--sur);border-radius:14px;padding:13px;margin-bottom:9px;box-shadow:var(--so)}
+.achead{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;margin-bottom:8px}
+.acname{font-size:13px;font-weight:600;color:var(--t1)}
+.acmeta{font-size:11px;color:var(--t2);margin-top:2px}
+.aacts{display:flex;gap:6px;flex-wrap:wrap}
+.abtn{
+  padding:6px 11px;border-radius:8px;border:none;
+  font-size:12px;font-weight:700;font-family:var(--fb);cursor:pointer;
+  background:var(--sur);box-shadow:var(--so);transition:all .15s;
+}
+.abtn:active{box-shadow:var(--ss)}
+.abtn.danger {color:var(--red)}
+.abtn.success{color:var(--gr)}
+.abtn.accent {color:var(--ac)}
+.abtn.muted  {color:var(--t2)}
+.bsel{
+  padding:6px 8px;background:var(--sur);box-shadow:var(--ss);
+  border:none;color:var(--t1);border-radius:8px;font-size:12px;
+  font-family:var(--fb);outline:none;
+}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:calc(var(--th)+12px);
+  left:50%;transform:translateX(-50%) translateY(14px);
+  background:var(--sur);box-shadow:var(--sd);
+  color:var(--t1);padding:10px 16px;border-radius:100px;
+  font-size:13px;font-weight:600;z-index:999;opacity:0;
+  transition:all .28s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;pointer-events:none;
+  display:flex;align-items:center;gap:6px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok::before {content:'✓';color:var(--gr);font-weight:800}
+.toast.err::before{content:'✕';color:var(--red);font-weight:800}
+
+/* BAN */
+.banscr{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:28px;z-index:9999;
+}
+.bani{font-size:52px;margin-bottom:18px}
+.bant{font-family:var(--fh);font-size:20px;font-weight:800;color:var(--t1);margin-bottom:8px}
+.band{font-size:14px;color:var(--t2);line-height:1.6}
+
+.sp8{height:8px}.sp12{height:12px}.sp16{height:16px}.sp20{height:20px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- MARKET -->
+<div id="pg-market" class="page active">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">Game<em>Market</em></div>
+      <div class="hdr-right">
+        <button class="theme-btn" id="tbtn" onclick="toggleTheme()">☀️</button>
+        <div class="usr-pill">
+          <div class="usr-av" id="hav">G</div>
+          <span class="usr-name" id="hnm">Mehmon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toggle">
+    <button class="tog-btn sell active" id="bsell" onclick="setType('sell')">💰 Sotish</button>
+    <button class="tog-btn buy"         id="bbuy"  onclick="setType('buy')">🛒 Sotib olish</button>
+  </div>
+  <div class="chips">
+    <button class="chip active" data-game="pubg" onclick="pickGame(this)">🎮 PUBG UC</button>
+    <button class="chip"        data-game="codm" onclick="pickGame(this)">🎯 CODM CP</button>
+    <button class="chip"        data-game="ff"   onclick="pickGame(this)">🔥 Free Fire</button>
+    <button class="chip"        data-game="ml"   onclick="pickGame(this)">⚔️ Mobile Legends</button>
+  </div>
+  <div class="feed" id="feed">
+    <div class="loader"><div class="spin"></div><p>Yuklanmoqda…</p></div>
+  </div>
+</div>
+
+<!-- POST -->
+<div id="pg-post" class="page">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">E'lon <em>qo'shish</em></div>
+      <button class="theme-btn" onclick="toggleTheme()">☀️</button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div class="fg">
+      <label class="flbl">E'lon turi</label>
+      <div class="tsel">
+        <div class="topt sell active" id="pt-sell" onclick="setPostType('sell')">
+          <div class="ti">💰</div><div class="tl">Sotaman</div><div class="ts">Valyutam bor</div>
+        </div>
+        <div class="topt buy" id="pt-buy" onclick="setPostType('buy')">
+          <div class="ti">🛒</div><div class="tl">Sotib olaman</div><div class="ts">Valyuta kerak</div>
+        </div>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="flbl">O'yin</label>
+      <div class="ggrid">
+        <div class="gopt pubg active" data-game="pubg" onclick="setPostGame(this)">
+          <span class="gi">🎮</span><div><div class="gn">PUBG Mobile</div><div class="gs">UC</div></div>
+        </div>
+        <div class="gopt codm" data-game="codm" onclick="setPostGame(this)">
+          <span class="gi">🎯</span><div><div class="gn">CODM</div><div class="gs">CP</div></div>
+        </div>
+        <div class="gopt ff" data-game="ff" onclick="setPostGame(this)">
+          <span class="gi">🔥</span><div><div class="gn">Free Fire</div><div class="gs">Diamonds</div></div>
+        </div>
+        <div class="gopt ml" data-game="ml" onclick="setPostGame(this)">
+          <span class="gi">⚔️</span><div><div class="gn">Mobile Legends</div><div class="gs">Diamonds</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="flbl">Miqdor</label>
+      <input id="pa" class="finp" type="text" placeholder="Masalan: 600 UC, 325 CP" maxlength="50">
+    </div>
+    <div class="fg">
+      <label class="flbl">Narx (UZS)</label>
+      <input id="pp" class="finp" type="number" placeholder="Masalan: 85000" min="1000" inputmode="numeric">
+    </div>
+    <div class="fg">
+      <label class="flbl">To'lov usuli</label>
+      <div class="paybox">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <p>Faqat karta orqali — Click va Payme</p>
+      </div>
+    </div>
+    <button class="subbtn" id="sbtn" onclick="submitPost()">✦ E'lonni joylash</button>
+    <div class="sp20"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="pg-profile" class="page">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">Profil<em>im</em></div>
+      <button class="theme-btn" onclick="toggleTheme()">☀️</button>
+    </div>
+  </div>
+  <div id="pcon"><div class="loader"><div class="spin"></div></div></div>
+</div>
+
+<!-- ADMIN -->
+<div id="pg-admin" class="page">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">Admin <em>Panel</em></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:1px">ADMIN</span>
+        <button class="theme-btn" onclick="toggleTheme()">☀️</button>
+      </div>
+    </div>
+  </div>
+  <div id="acon"><div class="loader"><div class="spin"></div></div></div>
+</div>
+
+</div>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <button class="tab-item active" id="tab-market" onclick="goTab('market',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.4 7h12.8M10 21a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z"/>
+    </svg>Bozor
+  </button>
+  <button class="tab-item" id="tab-post" onclick="goTab('post',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v8M8 12h8"/>
+    </svg>E'lon
+  </button>
+  <button class="tab-item" id="tab-profile" onclick="goTab('profile',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+      <path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>Profil
+  </button>
+  <button class="tab-item" id="tab-admin" style="display:none" onclick="goTab('admin',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+      <path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+    </svg>Admin
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SUPABASE_URL = 'https://llmttyowgohcagllkecg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsbXR0eW93Z29oY2FnbGxrZWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMzkwNjQsImV4cCI6MjA4OTYxNTA2NH0.AUENEMfL-PC8I0yfEfu0AIHs9RoVfC35ynpVtfFQnkg';
+const BOT_USERNAME = 'gamemarketuzbot';
+const ADMIN_TG_ID  = 8397359520;
+
+const GAMES = {
+  pubg:{name:'PUBG Mobile UC',icon:'🎮',short:'PUBG UC'},
+  codm:{name:'CODM CP',icon:'🎯',short:'CODM CP'},
+  ff:  {name:'Free Fire Diamonds',icon:'🔥',short:'Free Fire'},
+  ml:  {name:'Mobile Legends',icon:'⚔️',short:'ML Diamonds'},
+};
+
+// ── SUPABASE ─────────────────────────────────────────────────
+const {createClient} = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── TELEGRAM ─────────────────────────────────────────────────
+const tg     = window.Telegram?.WebApp;
+const tgUser = tg?.initDataUnsafe?.user || null;
+const tgId   = tgUser?.id || null;
+tg?.ready(); tg?.expand();
+
+// ── STATE ────────────────────────────────────────────────────
+let S = {
+  game:'pubg', type:'sell',
+  pgame:'pubg', ptype:'sell',
+  user:null, isAdmin:false, dark:false,
+};
+
+// ── THEME ────────────────────────────────────────────────────
+function toggleTheme(){
+  S.dark=!S.dark; applyTheme();
+  try{localStorage.setItem('gm_dk',S.dark?'1':'0')}catch(e){}
+}
+function applyTheme(){
+  document.documentElement.classList.toggle('dark',S.dark);
+  const ic = S.dark?'🌙':'☀️';
+  document.querySelectorAll('.theme-btn').forEach(b=>b.textContent=ic);
+}
+function initTheme(){
+  try{S.dark=localStorage.getItem('gm_dk')==='1'}catch(e){}
+  applyTheme();
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+async function init(){
+  initTheme();
+  if(tgId){
+    document.getElementById('hnm').textContent = tgUser.first_name||('ID:'+tgId);
+    document.getElementById('hav').textContent = (tgUser.first_name||'G').charAt(0).toUpperCase();
+    await ensureUser();
+    S.isAdmin = tgId===ADMIN_TG_ID;
+    if(S.isAdmin) document.getElementById('tab-admin').style.display='';
+  }
+  loadFeed();
+}
+
+async function ensureUser(){
+  const {data} = await db.from('users').select('*').eq('telegram_id',tgId).single();
+  if(!data){
+    await db.from('users').insert({
+      telegram_id:tgId,
+      username:tgUser?.username||'',
+      full_name:tgUser?.first_name||'',
+      rating_sum:0,rating_count:0,
+    });
+    S.user=(await db.from('users').select('*').eq('telegram_id',tgId).single()).data;
+  } else {
+    S.user=data;
+    if(data.is_banned){
+      document.body.innerHTML=`<div class="banscr"><div class="bani">🚫</div><div class="bant">Siz bloklangansiz</div><div class="band">Hisobingiz qoidabuzarlik sababli<br>platformadan bloklangan.</div></div>`;
+      throw new Error('banned');
+    }
+  }
+}
+
+// ── TAB ──────────────────────────────────────────────────────
+function goTab(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='profile') loadProfile();
+  if(name==='admin'&&S.isAdmin) loadAdmin();
+}
+
+// ── MARKET ───────────────────────────────────────────────────
+function setType(t){
+  S.type=t;
+  document.getElementById('bsell').classList.toggle('active',t==='sell');
+  document.getElementById('bbuy').classList.toggle('active',t==='buy');
+  loadFeed();
+}
+function pickGame(el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  S.game=el.dataset.game;
+  loadFeed();
+}
+
+async function loadFeed(){
+  const feed=document.getElementById('feed');
+  feed.innerHTML='<div class="loader"><div class="spin"></div><p>Yuklanmoqda…</p></div>';
+  const now=new Date().toISOString();
+  const {data,error}=await db
+    .from('listings')
+    .select('*, users!listings_seller_id_fkey(rating_sum,rating_count,total_trades,badge)')
+    .eq('game',S.game)
+    .eq('is_active',true)
+    .gt('expires_at',now);
+  if(error){
+    console.error('loadFeed:',error);
+    feed.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><h3>Xato</h3><p>${esc(error.message)}</p></div>`;
+    return;
+  }
+  // listing_type filter — agar ustun mavjud bo'lsa
+  const filtered = data ? data.filter(l=>(l.listing_type||'sell')===S.type) : [];
+  if(!filtered.length){
+    const lbl=S.type==='sell'?'sotish':'sotib olish';
+    feed.innerHTML=`<div class="empty"><div class="empty-icon">${GAMES[S.game].icon}</div><h3>E'lon yo'q</h3><p>${GAMES[S.game].name} uchun ${lbl} e'lonlari hozircha yo'q.<br>Birinchi bo'lib e'lon joylaing!</p></div>`;
+    return;
+  }
+  const ord={blue:0,silver:1,free:2};
+  filtered.sort((a,b)=>(ord[a.badge_type]??2)-(ord[b.badge_type]??2));
+  feed.innerHTML=filtered.map(l=>cardHTML(l)).join('');
+}
+
+function cardHTML(l){
+  const u=l.users||{};
+  const rat=u.rating_count>0?(u.rating_sum/u.rating_count).toFixed(1):'0.0';
+  const trd=u.total_trades||0;
+  const bt=l.badge_type||'free';
+  const lt=l.listing_type||'sell';
+  const did=String(l.seller_id).slice(-4);
+  const mine=tgId&&l.seller_id===tgId;
+  const g=GAMES[l.game]||{};
+  const pn=parseInt(String(l.price).replace(/\D/g,''))||0;
+  const bdg=bt!=='free'?`<div class="bdg ${bt}">${bt==='blue'?'💎 Blue':'🔘 Silver'}</div>`:'';
+  const pays=(l.payment_methods||[]).map(p=>`<span class="pchip">${p}</span>`).join('');
+  const act=mine
+    ?`<div class="mchip">📌 Sizning e'loningiz</div>`
+    :`<button class="cbtn" onclick="openChat(${l.id})">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        ${lt==='sell'?'Bog\'lanish':'Murojaat qilish'}
+      </button>`;
+  return`<div class="lcard ${l.game} badge-${bt}">
+    <div class="cbar"></div>
+    <div class="cin">
+      <div class="chead"><div class="gpill">${g.icon} ${g.short||g.name}</div>${bdg}</div>
+      <span class="tbadge ${lt}">${lt==='sell'?'💰 Sotaman':'🛒 Sotib olaman'}</span>
+      <div class="camount">${esc(l.amount)}</div>
+      <div class="cprow"><span class="cprice">${pn.toLocaleString('uz-UZ')}</span><span class="ccur">UZS</span></div>
+      <div class="prow">${pays}</div>
+      <div class="cfooter">
+        <div class="srow">
+          <div class="sav">#${did}</div>
+          <div><div class="sid">Foydalanuvchi #${did}</div><div class="str">${trd} savdo</div></div>
+        </div>
+        <div class="rpill">⭐ ${rat}</div>
+      </div>
+      ${act}
+    </div>
+  </div>`;
+}
+
+function openChat(lid){
+  if(!tgId){toast('Telegram orqali oching','err');return}
+  const url=`https://t.me/${BOT_USERNAME}?start=listing_${lid}`;
+  try{Telegram.WebApp.openTelegramLink(url);setTimeout(()=>Telegram.WebApp.close(),300)}
+  catch(e){window.open(url,'_blank')}
+}
+
+// ── POST ─────────────────────────────────────────────────────
+function setPostType(t){
+  S.ptype=t;
+  ['sell','buy'].forEach(x=>{
+    document.getElementById('pt-'+x).className=`topt ${x}${t===x?' active':''}`;
+  });
+}
+function setPostGame(el){
+  document.querySelectorAll('.gopt').forEach(e=>e.className=`gopt ${e.dataset.game}`);
+  el.className=`gopt ${el.dataset.game} active`;
+  S.pgame=el.dataset.game;
+}
+async function submitPost(){
+  if(!tgId){toast('Telegram orqali kirganingizda e\'lon joylay olasiz','err');return}
+  const amount=document.getElementById('pa').value.trim();
+  const prRaw=document.getElementById('pp').value.trim();
+  if(!amount){toast('Miqdorni kiriting','err');return}
+  if(!prRaw||isNaN(prRaw)){toast('Narxni kiriting','err');return}
+  const price=parseInt(prRaw);
+  if(price<1000||price>100_000_000){toast('Narx: 1,000 – 100,000,000 UZS','err');return}
+  const {data:u}=await db.from('users').select('*').eq('telegram_id',tgId).single();
+  S.user=u; const badge=u?.badge||'free';
+  if(badge==='free'){
+    const now=new Date().toISOString();
+    const {data:al}=await db.from('listings').select('id').eq('seller_id',tgId).eq('is_active',true).gt('expires_at',now);
+    if(al&&al.length>=1){toast('Free: faqat 1 ta aktiv e\'lon','err');return}
+  }
+  const btn=document.getElementById('sbtn');
+  btn.disabled=true;btn.textContent='Joylanyapti…';
+  const hours=badge==='free'?15:24;
+  const exp=new Date(Date.now()+hours*3600000).toISOString();
+  const {error}=await db.from('listings').insert({
+    seller_id:tgId,listing_type:S.ptype,game:S.pgame,
+    amount,price:String(price),payment_methods:['Click','Payme'],
+    duration_hours:hours,badge_type:badge,is_active:true,expires_at:exp,
+  });
+  btn.disabled=false;btn.innerHTML="✦ E'lonni joylash";
+  if(error){toast('Xato: '+error.message,'err');return}
+  if(badge==='free'){
+    const ws=weekStart();
+    const {data:wk}=await db.from('weekly_listings').select('listing_count').eq('user_id',tgId).eq('week_start',ws).single();
+    if(wk)await db.from('weekly_listings').update({listing_count:(wk.listing_count||0)+1}).eq('user_id',tgId).eq('week_start',ws);
+    else await db.from('weekly_listings').insert({user_id:tgId,week_start:ws,listing_count:1});
+  }
+  toast("E'lon joylandi!",'ok');
+  document.getElementById('pa').value='';
+  document.getElementById('pp').value='';
+  setTimeout(()=>goTab('market',document.getElementById('tab-market')),1400);
+}
+
+// ── PROFILE ──────────────────────────────────────────────────
+async function loadProfile(){
+  const c=document.getElementById('pcon');
+  if(!tgId){c.innerHTML=`<div class="empty"><div class="empty-icon">🔒</div><h3>Kirish kerak</h3><p>Profilni ko'rish uchun<br>Telegram orqali oching.</p></div>`;return}
+  c.innerHTML='<div class="loader"><div class="spin"></div></div>';
+  const {data:u}=await db.from('users').select('*').eq('telegram_id',tgId).single();
+  if(!u)return;
+  S.user=u;
+  const rat=u.rating_count>0?(u.rating_sum/u.rating_count).toFixed(1):'0.0';
+  const av=(u.full_name||tgUser?.first_name||'U').charAt(0).toUpperCase();
+  const bdg={free:'🆓 Free',silver:'🔘 Silver',blue:'💎 Blue'}[u.badge]||'Free';
+  let expH='';
+  if(u.badge!=='free'&&u.badge_expires_at){
+    const days=Math.max(0,Math.floor((new Date(u.badge_expires_at)-new Date())/86400000));
+    expH=`<span class="expb">📅 ${days} kun qoldi</span>`;
+  }
+  const now=new Date().toISOString();
+  const {data:myL}=await db.from('listings').select('*').eq('seller_id',tgId).eq('is_active',true).gt('expires_at',now).order('created_at',{ascending:false});
+  const listings=myL||[];
+  const lHTML=listings.length===0
+    ?`<div class="empty" style="padding:20px"><div class="empty-icon" style="font-size:32px">📭</div><p>Aktiv e'lonlar yo'q</p></div>`
+    :`<div class="mylist">${listings.map(l=>`
+      <div class="myrow">
+        <div class="mrl">
+          <div class="mrn">${l.listing_type==='buy'?'🛒':'💰'} ${GAMES[l.game]?.icon||''} ${esc(l.amount)} — ${fmt(l.price)} UZS</div>
+          <div class="mrm">${GAMES[l.game]?.name||l.game} · ${(l.expires_at||'').slice(0,10)}</div>
+        </div>
+        <button class="delbtn" onclick="delListing(${l.id})">
+          <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>`).join('')}</div>`;
+  c.innerHTML=`
+    <div class="phero">
+      <div class="pav">${av}</div>
+      <div class="pname">${esc(u.full_name||tgUser?.first_name||'User')}</div>
+      ${u.username?`<div class="phandle">@${esc(u.username)}</div>`:''}
+      <div class="pbrow"><span class="pbadge ${u.badge}">${bdg}</span>${expH}</div>
+    </div>
+    <div class="srow3">
+      <div class="sbox"><div class="sval">${rat}</div><div class="slbl">⭐ Reyting</div></div>
+      <div class="sbox"><div class="sval">${u.total_trades||0}</div><div class="slbl">📦 Savdolar</div></div>
+      <div class="sbox"><div class="sval">${listings.length}</div><div class="slbl">📢 E'lonlar</div></div>
+    </div>
+    <div class="sechead">Aktiv E'lonlarim</div>
+    ${lHTML}<div class="sp20"></div>`;
+}
+async function delListing(id){
+  if(!confirm("E'lonni o'chirishni tasdiqlaysizmi?"))return;
+  const {error}=await db.from('listings').update({is_active:false}).eq('id',id).eq('seller_id',tgId);
+  if(error)toast('Xato: '+error.message,'err');
+  else{toast("E'lon o'chirildi",'ok');loadProfile()}
+}
+
+// ── ADMIN ────────────────────────────────────────────────────
+async function loadAdmin(){
+  const c=document.getElementById('acon');
+  if(!S.isAdmin){c.innerHTML=`<div class="empty"><div class="empty-icon">🔒</div><h3>Ruxsat yo'q</h3><p>Bu sahifa faqat admin uchun.</p></div>`;return}
+  c.innerHTML='<div class="loader"><div class="spin"></div></div>';
+  const now=new Date().toISOString();
+  const [uR,lR,oR,rR]=await Promise.all([
+    db.from('users').select('badge,is_banned'),
+    db.from('listings').select('id').eq('is_active',true).gt('expires_at',now),
+    db.from('orders').select('id'),
+    db.from('reports').select('id').eq('status','pending'),
+  ]);
+  const us=uR.data||[],ls=lR.data||[],os=oR.data||[],rs=rR.data||[];
+  const {data:allU}=await db.from('users').select('*').order('created_at',{ascending:false}).limit(50);
+  const {data:allL}=await db.from('listings').select('*').eq('is_active',true).gt('expires_at',now).order('created_at',{ascending:false}).limit(30);
+  c.innerHTML=`
+    <div class="agrid">
+      <div class="astat"><div class="aval">${us.length}</div><div class="albl">👥 Foydalanuvchilar</div></div>
+      <div class="astat"><div class="aval">${ls.length}</div><div class="albl">📢 Aktiv e'lonlar</div></div>
+      <div class="astat"><div class="aval">${os.length}</div><div class="albl">📦 Buyurtmalar</div></div>
+      <div class="astat"><div class="aval" style="color:var(--red)">${rs.length}</div><div class="albl">🚨 Shikoyatlar</div></div>
+      <div class="astat"><div class="aval" style="color:#6b78a0">${us.filter(u=>u.badge==='silver').length}</div><div class="albl">🔘 Silver</div></div>
+      <div class="astat"><div class="aval" style="color:var(--ac)">${us.filter(u=>u.badge==='blue').length}</div><div class="albl">💎 Blue</div></div>
+    </div>
+    <div class="sp16"></div>
+    <div class="sechead">E'lonlar</div>
+    <div class="alist">
+      ${(allL||[]).map(l=>{const g=GAMES[l.game]||{};return`<div class="acard" id="al-${l.id}">
+        <div class="achead">
+          <div><div class="acname">${g.icon||''} ${esc(l.amount)} — ${fmt(l.price)} UZS</div>
+          <div class="acmeta">${g.name||l.game} · ${(l.listing_type||'sell')==='buy'?'Sotib olish':'Sotish'} · ID: ${l.seller_id}</div></div>
+          <button class="abtn danger" onclick="aDelL(${l.id})">O'chirish</button>
+        </div></div>`;}).join('')||`<p style="color:var(--t2);font-size:13px;padding:10px 0">E'lonlar yo'q</p>`}
+    </div>
+    <div class="sechead">Foydalanuvchilar</div>
+    <div class="alist">
+      ${(allU||[]).map(u=>{const nm=esc(u.full_name||u.username||'User');
+        const bb=u.is_banned
+          ?`<button class="abtn success" onclick="aUnban(${u.telegram_id},this)">Unban</button>`
+          :`<button class="abtn danger" onclick="aBan(${u.telegram_id},this)">Ban</button>`;
+        return`<div class="acard" id="ur-${u.telegram_id}">
+          <div class="acname">${nm}${u.is_banned?' 🚫':''}</div>
+          <div class="acmeta">ID: ${u.telegram_id} · ${u.total_trades||0} savdo${u.badge!=='free'?' · '+u.badge:''}</div>
+          <div class="aacts">
+            <select class="bsel" id="bs-${u.telegram_id}">
+              <option value="free" ${u.badge==='free'?'selected':''}>Free</option>
+              <option value="silver" ${u.badge==='silver'?'selected':''}>Silver</option>
+              <option value="blue" ${u.badge==='blue'?'selected':''}>Blue</option>
+            </select>
+            <button class="abtn accent" onclick="aSetBadge(${u.telegram_id})">Saqlash</button>
+            ${bb}
+          </div></div>`;}).join('')||`<p style="color:var(--t2);font-size:13px;padding:10px 0">Foydalanuvchilar yo'q</p>`}
+    </div><div class="sp20"></div>`;
+}
+async function aDelL(id){
+  if(!confirm('O\'chirilsinmi?'))return;
+  await db.from('listings').update({is_active:false}).eq('id',id);
+  document.getElementById('al-'+id)?.remove();
+  toast("E'lon o'chirildi",'ok');
+}
+async function aBan(uid,btn){
+  if(!confirm('Ban berilsinmi?'))return;
+  btn.disabled=true;
+  const {data:u}=await db.from('users').select('ban_count').eq('telegram_id',uid).single();
+  await db.from('users').update({is_banned:true,ban_count:(u?.ban_count||0)+1}).eq('telegram_id',uid);
+  toast('User banlandi','ok');loadAdmin();
+}
+async function aUnban(uid,btn){
+  btn.disabled=true;
+  await db.from('users').update({is_banned:false}).eq('telegram_id',uid);
+  toast('Ban olib tashlandi','ok');loadAdmin();
+}
+async function aSetBadge(uid){
+  const badge=document.getElementById('bs-'+uid)?.value;
+  const exp=badge!=='free'?new Date(Date.now()+30*86400000).toISOString():null;
+  await db.from('users').update({badge,badge_expires_at:exp}).eq('telegram_id',uid);
+  toast('Badge yangilandi: '+badge,'ok');
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmt(p){return(parseInt(String(p).replace(/\D/g,''))||0).toLocaleString('uz-UZ')}
+function weekStart(){const d=new Date(),day=d.getDay()||7;d.setDate(d.getDate()-day+1);return d.toISOString().split('T')[0]}
+let _tt;
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show '+(type||'');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.className='toast',2800);
+}
+
+// ── START ─────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GameMarket UZ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
