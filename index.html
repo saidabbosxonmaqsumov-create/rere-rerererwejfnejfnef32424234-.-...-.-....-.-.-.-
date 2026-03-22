@@ -179,7 +179,9 @@ html.dark .tab-bar{box-shadow:0 -2px 12px rgba(0,0,0,0.5)}
 .lcard.codm .sav{background:linear-gradient(135deg,#FF4B5C,#C0002E);color:#fff}
 .lcard.ff   .sav{background:linear-gradient(135deg,#FF7B35,#E03200);color:#fff}
 .lcard.ml   .sav{background:linear-gradient(135deg,#A855F7,#6D28D9);color:#fff}
-.sid{font-size:12px;font-weight:600;color:var(--t1)}
+.sid{font-size:12px;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:3px}
+.vbadge{display:inline-flex;align-items:center;vertical-align:middle}
+.vbadge svg{width:14px;height:14px}
 .str{font-size:11px;color:var(--t2);margin-top:1px}
 .rpill{
   font-size:12px;font-weight:700;color:var(--gold);
@@ -500,7 +502,7 @@ html.dark .tab-bar{box-shadow:0 -2px 12px rgba(0,0,0,0.5)}
       <path stroke-linecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
     </svg>Profil
   </button>
-  <button class="tab-item" id="tab-admin" style="display:none" onclick="goTab('admin',this)">
+  <button class="tab-item" id="tab-admin" onclick="goTab('admin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
       <path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
     </svg>Admin
@@ -562,10 +564,12 @@ async function init(){
     document.getElementById('hnm').textContent = tgUser.first_name||('ID:'+tgId);
     document.getElementById('hav').textContent = (tgUser.first_name||'G').charAt(0).toUpperCase();
     await ensureUser();
-    S.isAdmin = String(tgId)===String(ADMIN_TG_ID);
-    console.log('tgId:', tgId, typeof tgId, '| ADMIN:', ADMIN_TG_ID, '| isAdmin:', S.isAdmin);
-    const tabAdmin = document.getElementById('tab-admin');
-    if(S.isAdmin && tabAdmin){ tabAdmin.style.display=''; tabAdmin.style.visibility='visible'; }
+    S.isAdmin = Number(tgId) === Number(ADMIN_TG_ID);
+    console.log('tgId:', tgId, '| ADMIN_TG_ID:', ADMIN_TG_ID, '| match:', S.isAdmin);
+    if(S.isAdmin){
+      const t = document.getElementById('tab-admin');
+      if(t){ t.removeAttribute('style'); t.style.display='flex'; }
+    }
   }
   loadFeed();
 }
@@ -619,7 +623,7 @@ async function loadFeed(){
   const now=new Date().toISOString();
   const {data,error}=await db
     .from('listings')
-    .select('*, users!listings_seller_id_fkey(rating_sum,rating_count,total_trades,badge)')
+    .select('*, users!listings_seller_id_fkey(rating_sum,rating_count,total_trades,badge,verified_level)')
     .eq('game',S.game)
     .eq('is_active',true)
     .gt('expires_at',now);
@@ -644,6 +648,7 @@ function cardHTML(l){
   const u=l.users||{};
   const rat=u.rating_count>0?(u.rating_sum/u.rating_count).toFixed(1):'0.0';
   const trd=u.total_trades||0;
+  const vlvl = u.verified_level!=null ? u.verified_level : (trd>=500?2:trd>=250?1:0);
   const bt=l.badge_type||'free';
   const lt=l.listing_type||'sell';
   const did=String(l.seller_id).slice(-4);
@@ -669,7 +674,10 @@ function cardHTML(l){
       <div class="cfooter">
         <div class="srow">
           <div class="sav">#${did}</div>
-          <div><div class="sid">Foydalanuvchi #${did}</div><div class="str">${trd} savdo</div></div>
+          <div>
+            <div class="sid">Foydalanuvchi #${did}${vbadgeHTML(vlvl)}</div>
+            <div class="str">${trd} savdo</div>
+          </div>
         </div>
         <div class="rpill">⭐ ${rat}</div>
       </div>
@@ -838,6 +846,12 @@ async function loadAdmin(){
               <option value="blue" ${u.badge==='blue'?'selected':''}>Blue</option>
             </select>
             <button class="abtn accent" onclick="aSetBadge(${u.telegram_id})">Saqlash</button>
+            <select class="bsel" id="vl-${u.telegram_id}">
+              <option value="0" ${(u.verified_level||0)===0?'selected':''}>✗ Verified yo'q</option>
+              <option value="1" ${(u.verified_level||0)===1?'selected':''}>◉ Kulrang</option>
+              <option value="2" ${(u.verified_level||0)===2?'selected':''}>✓ Ko'k</option>
+            </select>
+            <button class="abtn accent" onclick="aSetVerified(${u.telegram_id})">V</button>
             ${bb}
           </div></div>`;}).join('')||`<p style="color:var(--t2);font-size:13px;padding:10px 0">Foydalanuvchilar yo'q</p>`}
     </div><div class="sp20"></div>`;
@@ -860,6 +874,11 @@ async function aUnban(uid,btn){
   await db.from('users').update({is_banned:false}).eq('telegram_id',uid);
   toast('Ban olib tashlandi','ok');loadAdmin();
 }
+async function aSetVerified(uid){
+  const lvl=parseInt(document.getElementById('vl-'+uid)?.value||'0');
+  await db.from('users').update({verified_level:lvl}).eq('telegram_id',uid);
+  toast('Verified yangilandi','ok');
+}
 async function aSetBadge(uid){
   const badge=document.getElementById('bs-'+uid)?.value;
   const exp=badge!=='free'?new Date(Date.now()+30*86400000).toISOString():null;
@@ -868,6 +887,11 @@ async function aSetBadge(uid){
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
+function vbadgeHTML(lvl){
+  if(lvl===2) return '<span class="vbadge" title="Verified (500+ savdo)"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#4a9eff"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  if(lvl===1) return '<span class="vbadge" title="Verified (250+ savdo)"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#9aa0b0"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  return '';
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmt(p){const n=(parseInt(String(p).replace(/\D/g,''))||0);if(n>=1000000)return(n/1000000).toFixed(1).replace('.0','')+' mln';if(n>=1000)return(n/1000).toFixed(0)+' ming';return n.toString()}
 function weekStart(){const d=new Date(),day=d.getDay()||7;d.setDate(d.getDate()-day+1);return d.toISOString().split('T')[0]}
@@ -879,6 +903,7 @@ function toast(msg,type=''){
 }
 
 // ── START ─────────────────────────────────────────────────────
+document.getElementById('tab-admin').style.display='none';
 init();
 </script>
 </body>
